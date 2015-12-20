@@ -28,7 +28,6 @@ public class MongodbConnection {
         try {
 
             //System.out.println("mongo start connect");
-            //if (host.equals("")) { host = "s2.osh2.net"; }
             MongoClientOptions options = MongoClientOptions.builder()
                     .connectTimeout(30000)
                     //.socketTimeout(30000)
@@ -71,8 +70,6 @@ public class MongodbConnection {
 
             if (mongoClient == null) {
                 //System.out.println("client is null");
-                //connect("s3.osh3.net","","nico","nico");
-                //return false;
             }
 
             db = mongoClient.getDB(dbName);
