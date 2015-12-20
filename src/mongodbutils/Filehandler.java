@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
@@ -41,13 +39,15 @@ public class Filehandler {
             HSSFWorkbook wb = new HSSFWorkbook(fs);
             HSSFSheet sheet = wb.getSheetAt(0);
 
-            String strValue = "";
+            Object objReturn = null;
+
             //Read in first row as field names
             Row rowH = sheet.getRow(sheet.getFirstRowNum());
             String fields[] = new String[sheet.getRow(0).getLastCellNum()];
             for (Cell cell : rowH) {
-                strValue = getCellValue(cell);
-                fields[cell.getColumnIndex()] = strValue;
+                objReturn = null;
+                objReturn = getCellValue(cell);
+                fields[cell.getColumnIndex()] = objReturn.toString();
             }
 
             //loop thru all cells with values
@@ -59,19 +59,26 @@ public class Filehandler {
                 JSONObject obj = new JSONObject();
 
                 for (Cell cell : row) {
-                    if (fields.length<cell.getColumnIndex()) continue; //only export column if we have header set
-                    
-                    strValue = getCellValue(cell);
-                    if (!strValue.equals("")) {
-                        if (strValue.contains("$date")) {
-                            JSONParser parser = new JSONParser();
-                            try {
-                                obj.put(fields[cell.getColumnIndex()], parser.parse(strValue));
-                            } catch (ParseException ex) {
-                                Logger.getLogger(Filehandler.class.getName()).log(Level.SEVERE, null, ex);
+                    if (fields.length < cell.getColumnIndex()) {
+                        continue; //only export column if we have header set
+                    }
+                    objReturn = null;
+                    objReturn = getCellValue(cell);
+                    if (!objReturn.toString().equals("")) {
+                        if (objReturn instanceof Double) {
+                            obj.put(fields[cell.getColumnIndex()], objReturn);
+
+                        } else if (objReturn instanceof String) {
+                            if (objReturn.toString().contains("$date")) {
+                                JSONParser parser = new JSONParser();
+                                try {
+                                    obj.put(fields[cell.getColumnIndex()], parser.parse(objReturn.toString()));
+                                } catch (ParseException ex) {
+                                    Logger.getLogger(Filehandler.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            } else {
+                                obj.put(fields[cell.getColumnIndex()], objReturn);
                             }
-                        } else {
-                            obj.put(fields[cell.getColumnIndex()], strValue);
                         }
                     }
                 }
@@ -94,7 +101,7 @@ public class Filehandler {
         return false;
     }
 
-    private String getCellValue(Cell cell) {
+    private Object getCellValue(Cell cell) {
 
         switch (cell.getCellType()) {
             case Cell.CELL_TYPE_STRING:
@@ -109,7 +116,7 @@ public class Filehandler {
 
                     //return "" + cell.getDateCellValue();
                 } else {
-                    return "" + cell.getNumericCellValue();
+                    return cell.getNumericCellValue();
                 }
             case Cell.CELL_TYPE_BOOLEAN:
                 return "" + cell.getBooleanCellValue();
